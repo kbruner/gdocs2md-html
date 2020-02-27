@@ -861,7 +861,6 @@ function processParagraph(index, element, inSrc, imageCounter, listCounters, ima
                   'src="http://www.html5rocks.com/static/jsperfview/embed.html?id='+RegExp.$1+
                   '"></iframe>';
   } else {
-
     prefix = findPrefix(inSrc, element, listCounters);
 
     var pOut = "";
@@ -939,7 +938,7 @@ function processTextElement(inSrc, txt) {
     return pOut;
   }
 
-  Logger.log("Initial String: " + pOut)
+  // Logger.log("Initial String: " + pOut)
 
   // CRC introducing reformatted_txt to let us apply rational formatting that we can actually parse
   var reformatted_txt = txt.copy();
@@ -1067,8 +1066,9 @@ function processTextElement(inSrc, txt) {
 
     var raw_text = pOut.substring(off, lastOff)
 
-    var d1 = ""; // @lmmx: build up a modifier prefix
-    var d2 = ""; // @lmmx: ...and suffix
+    var text_mods = [];
+    // var d1 = ""; // @lmmx: build up a modifier prefix
+    // var d2 = ""; // @lmmx: ...and suffix
 
     var end_font;
 
@@ -1104,7 +1104,7 @@ function processTextElement(inSrc, txt) {
         mark_sub = true;
       }
     } else {
-      end_font = reformatted_txt.getFontFamily(lastOff -1 )
+      end_font = reformatted_txt.getFontFamily(lastOff - 1);
       if (end_font) {
         if (!inSrc && end_font==='Courier New' && reformatted_txt.getFontFamily(lastOff) != end_font) {
           mark_code=true;
@@ -1132,114 +1132,47 @@ function processTextElement(inSrc, txt) {
     }
 
     if (mark_code) {
-      d2 = '`'; // shouldn't these go last? or will it interfere w/ reAlignStars?
-    }
-    if (mark_bold) {
-      d2 = "**" + d2;
-    }
-    if (mark_italic) {
-      d2 = "*" + d2;
-    }
-    if (mark_strike) {
-      d2 = "</strike>" + d2;
-    }
-    if (mark_sup) {
-      d2 = '</sup>' + d2;
-    }
-    if (mark_sub) {
-      d2 = '</sub>' + d2;
-    }
-
-    mark_bold = mark_italic = mark_code = mark_sup = mark_sub = mark_strike = false;
-
-    var font=reformatted_txt.getFontFamily();
-    // Logger.log('font: ' + font);
-    if (off == 0) {
-      if (font) {
-        if (!inSrc && font==='Courier New') {
-          mark_code = true;
-        }
-      }
-      if (reformatted_txt.isBold(off)) {
-        mark_bold = true;
-      }
-      if (reformatted_txt.isItalic(off)) {
-        mark_italic = true;
-      }
-      if (reformatted_txt.isStrikethrough(off)) {
-        mark_strike = true;
-      }
-      if (reformatted_txt.getTextAlignment(off)===DocumentApp.TextAlignment.SUPERSCRIPT) {
-        mark_sup = true;
-      }
-      if (reformatted_txt.getTextAlignment(off)===DocumentApp.TextAlignment.SUBSCRIPT) {
-        mark_sub = true;
-      }
-    } else {
-      if (font) {
-        if (!inSrc && font==='Courier New' && reformatted_txt.getFontFamily(off - 1) != font) {
-          mark_code=true;
-        }
-      }
-      if (reformatted_txt.isBold(off) && !reformatted_txt.isBold(off -1) ) {
-        mark_bold=true;
-      }
-      if (reformatted_txt.isItalic(off) && !reformatted_txt.isItalic(off - 1)) {
-        mark_italic=true;
-      }
-      if (reformatted_txt.isStrikethrough(off) && !reformatted_txt.isStrikethrough(off - 1)) {
-        mark_strike=true;
-      }
-      if (reformatted_txt.getTextAlignment(off)===DocumentApp.TextAlignment.SUPERSCRIPT) {
-        if (reformatted_txt.getTextAlignment(off - 1)!==DocumentApp.TextAlignment.SUPERSCRIPT) {
-          mark_sup = true;
-        }
-      }
-      if (reformatted_txt.getTextAlignment(off)===DocumentApp.TextAlignment.SUBSCRIPT) {
-        if (reformatted_txt.getTextAlignment(off - 1)!==DocumentApp.TextAlignment.SUBSCRIPT) {
-          mark_sub = true;
-        }
-      }
-    }
-
-
-    if (mark_code) {
-      d1 = '`';
+      text_mods.push('`');
     }
 
     if (mark_bold) {
-      d1 = d1 + "**";
+      text_mods.push('**');
     }
 
     if (mark_italic) {
-      d1 = d1 + "*";
+      text_mods.push('*');
     }
 
     if (mark_sup) {
-      d1 = d1 + '<sup>';
+      text_mods.push('<sup>');
     }
 
     if (mark_sub) {
-      d1 = d1 + '<sub>';
+      text_mods.push('<sub>');
     }
 
     if (mark_strike) {
-      d1 = d1 + '<strike>';
+      text_mods.push('<strike>');
     }
+
+    var text_postfix = text_mods.join('');
+    var text_prefix = text_mods.reverse().join('');
 
     var url=reformatted_txt.getLinkUrl(off);
     if (url) {
-      mOut = d1 + '['+ raw_text +']('+url+')' + d2 + mOut;
+      var new_text = '[' + text_prefix + raw_text + text_postfix + ']('+url+')';
+      mOut =  new_text + mOut;
     } else {
-      var new_text = d1 + raw_text + d2;
+      var new_text = text_prefix + raw_text + text_postfix;
       new_text = new_text.replace(reAlignStars, "$2$1$3$5$4");
       mOut =  new_text + mOut;
     }
 
     lastOff=off;
-    Logger.log("Modified String: " + mOut)
+    // Logger.log("Modified String: " + mOut);
   }
 
   mOut = pOut.substring(0, off) + mOut;
   return mOut;
 }
+
